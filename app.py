@@ -140,12 +140,20 @@ def main():
         ax1.grid(True, linestyle='--', alpha=0.7)
         ax1.legend()
 
-        ax2.bar(df_data.index, df_data['volume'], color='grey', alpha=0.7)
+        # --- Volume Chart Enhancement ---
+        # Calculate price change for dynamic volume bar coloring
+        # We need to shift the price to get the previous day's close for comparison
+        df_data['price_change'] = df_data['price'].diff()
+
+        # Define colors for volume bars based on price change
+        volume_bar_colors = ['green' if x > 0 else 'red' for x in df_data['price_change']]
+
+        ax2.bar(df_data.index, df_data['volume'], color=volume_bar_colors, alpha=0.7) # Set width for better appearance
         ax2.set_title(f'{selected_coin_name} Trading Volume over {days} Days', fontsize=16)
         ax2.set_xlabel('Date', fontsize=12)
         ax2.set_ylabel(f'Volume ({vs_currency.upper()})', fontsize=12)
         ax2.grid(True, linestyle='--', alpha=0.7)
-        ax2.ticklabel_format(style='plain', axis='y')
+        ax2.ticklabel_format(style='plain', axis='y') # Ensure plain style for large numbers on y-axis
         
         plt.xticks(rotation=45)
         plt.tight_layout()
@@ -195,21 +203,28 @@ def main():
 
         # Check if MACD columns exist before plotting
         if 'MACD_12_26_9' in df_data.columns and 'MACDs_12_26_9' in df_data.columns and 'MACDh_12_26_9' in df_data.columns:
-            ax_macd.plot(df_data.index, df_data['MACD_12_26_9'], label='MACD Line', color='purple', linewidth=1.5)
-            ax_macd.plot(df_data.index, df_data['MACDs_12_26_9'], label='Signal Line', color='orange', linewidth=1.5, linestyle='--')
-            ax_macd.bar(df_data.index, df_data['MACDh_12_26_9'], label='Histogram', color='grey', alpha=0.6)
+            # Plot MACD Line: Thicker, distinctive color (e.g., blue) for better visibility
+            ax_macd.plot(df_data.index, df_data['MACD_12_26_9'], label='MACD Line', color='blue', linewidth=2)
+            
+            # Plot Signal Line: Slightly thinner, dashed, and a contrasting color (e.g., red)
+            ax_macd.plot(df_data.index, df_data['MACDs_12_26_9'], label='Signal Line', color='red', linewidth=1.5, linestyle='--')
+            
+            # Plot Histogram: Dynamically colored based on positive (green) or negative (red) values
+            # Add some transparency (alpha) so lines underneath can be seen
+            bar_colors = ['green' if x >= 0 else 'red' for x in df_data['MACDh_12_26_9']]
+            ax_macd.bar(df_data.index, df_data['MACDh_12_26_9'], label='Histogram', color=bar_colors, alpha=0.6)
 
-            ax_macd.axhline(0, color='black', linestyle=':', linewidth=0.8) # Zero line
-            ax_macd.set_title(f'{selected_coin_name} MACD over {days} Days', fontsize=16)
+            ax_macd.axhline(0, color='black', linestyle=':', linewidth=0.8) # Zero line for reference
+            ax_macd.set_title(f'MACD for {selected_coin_name} over {days} Days', fontsize=16)
             ax_macd.set_xlabel('Date', fontsize=12)
             ax_macd.set_ylabel('MACD Value', fontsize=12)
-            ax_macd.grid(True, linestyle='--', alpha=0.7)
-            ax_macd.legend()
-            plt.xticks(rotation=45)
-            plt.tight_layout()
-            st.pyplot(fig_macd)
+            ax_macd.grid(True, linestyle='--', alpha=0.7) # Add a grid for better readability
+            ax_macd.legend() # Display the legend for all plotted elements
+            plt.xticks(rotation=45) # Rotate x-axis labels for readability
+            plt.tight_layout() # Adjust plot to ensure everything fits
+            st.pyplot(fig_macd) # Display the Matplotlib figure in Streamlit
         else:
-            st.warning(f"  > Not enough data to calculate MACD for {selected_coin_name}.")
+            st.warning(f"  > Not enough data to calculate MACD for {selected_coin_name}.")
             plt.close(fig_macd) # Close empty plot to prevent display issues
 
         # --- New: Visualization Section for RSI ---
